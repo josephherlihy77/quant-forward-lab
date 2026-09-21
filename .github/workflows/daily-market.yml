@@ -18,6 +18,6 @@ jobs:
       - run: |
           git config user.name "quant-forward-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/latest.json
-          git diff --cached --quiet || git commit -m "Update daily market monitor"
+          git add data/latest.json data/forward_entry_001.json
+          git diff --cached --quiet || git commit -m "Update prospective forward monitor"
           git push
