@@ -43,8 +43,8 @@ df["vol_expansion"]=df["vol3"]/df["vol12"].replace(0,np.nan)
 # Exact next-row target is allowed only when it is the next calendar month.
 df["next_date"]=g["Date"].shift(-1)
 df["next_close"]=g["Close"].shift(-1)
-df["next_eligible"]=g["Eligible"].shift(-1).fillna(False).astype(bool)
-df["next_firewall"]=g["IntegrityFirewall"].shift(-1).fillna(True).astype(bool)
+df["next_eligible"]=g["Eligible"].shift(-1).eq(True)
+df["next_firewall"]=~g["IntegrityFirewall"].shift(-1).eq(False)
 curp=df["Date"].dt.to_period("M"); nxtp=df["next_date"].dt.to_period("M")
 df["consecutive_next_month"]=(nxtp-curp).apply(lambda x:(getattr(x,"n",None)==1) if pd.notna(x) else False)
 df["fwd1"]=df["next_close"]/df["Close"]-1
@@ -57,15 +57,19 @@ mask=(df["Eligible"].fillna(False).astype(bool) & df["next_eligible"] &
       df["consecutive_next_month"] & finite & np.isfinite(df["fwd1"]))
 use=df.loc[mask,["Date","Ticker","fwd1"]+features].copy()
 
-# Fail closed on residual extreme monthly returns. Report before failing rather than silently winsorizing.
+# Extreme MONTHLY returns can be genuine (biotech, distressed equities, leveraged products).
+# The original 90% daily firewall threshold must not be misapplied to monthly returns.
+# Audit and preserve them; fail only for mathematically impossible long-only returns (< -100%)
+# or non-finite targets. This avoids silently deleting real tail outcomes.
 q=use["fwd1"].quantile([0,.0001,.001,.01,.5,.99,.999,.9999,1])
 print("\nForward 1M return sanity quantiles:\n",q.to_string())
 extreme=(use["fwd1"].abs()>=0.90)
-print(f"Residual |1M return| >= 90%: {int(extreme.sum()):,} / {len(use):,}")
-if extreme.any():
-    sample=use.loc[extreme,["Date","Ticker","fwd1"]].sort_values("fwd1").head(20)
-    sample.to_csv(OUT/"residual_extremes.csv",index=False)
-    raise RuntimeError("FAIL CLOSED: residual >=90% monthly returns remain after eligibility/firewall. Inspect residual_extremes.csv.")
+print(f"Audited |1M return| >= 90%: {int(extreme.sum()):,} / {len(use):,}")
+use.loc[extreme,["Date","Ticker","fwd1"]].sort_values("fwd1").to_csv(OUT/"audited_monthly_extremes.csv",index=False)
+impossible=(use["fwd1"] < -1.0) | ~np.isfinite(use["fwd1"])
+if impossible.any():
+    use.loc[impossible,["Date","Ticker","fwd1"]].to_csv(OUT/"impossible_forward_returns.csv",index=False)
+    raise RuntimeError("FAIL CLOSED: impossible/non-finite forward returns remain.")
 
 # Temporary market proxy retained only for Pass 002 because historical SPY total-return
 # series is not present in this parquet. Promotion remains prohibited until explicit SPY.
@@ -106,7 +110,7 @@ manifest={"status":"RESEARCH_ONLY_AWAITING_SPY","model":"DOWNSIDE_V1_PASS_002",
  "input":str(INPUT),"rows":len(use),"months":len(months),"date_min":str(use.Date.min().date()),
  "date_max":str(use.Date.max().date()),"features":features,
  "target":"worst decile 1M forward excess return; temporary cross-sectional median benchmark",
- "integrity":["Eligible at t","Eligible at t+1","firewall clear at t and t+1","exact next calendar month","abs forward return <90% fail-closed"],
+ "integrity":["Eligible at t","Eligible at t+1","firewall clear at t and t+1","exact next calendar month","monthly >=90% tails audited not deleted","forward return below -100% or non-finite fails closed"],
  "split":{"train":"first 60% months","validation":"next 20%","test":"final 20%"},
  "promotion_blocker":"Explicit adjusted SPY total-return benchmark still required.",
  "results_sha256":hashlib.sha256((OUT/"baseline_results.csv").read_bytes()).hexdigest()}
