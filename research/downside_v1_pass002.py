@@ -16,7 +16,15 @@ if missing: raise RuntimeError(f"Missing required columns: {sorted(missing)}")
 df["Date"]=pd.to_datetime(df["Date"])
 df=df.sort_values(["Ticker","Date"]).reset_index(drop=True)
 if df.duplicated(["Ticker","Date"]).any(): raise RuntimeError("Duplicate ticker/date rows")
-if (df["Close"]<=0).any(): raise RuntimeError("Non-positive Close detected")
+bad_price=df["Close"].notna() & (df["Close"]<=0)
+bad_eligible=bad_price & df["Eligible"].fillna(False).astype(bool)
+print(f"Global non-positive Close rows: {int(bad_price.sum()):,}; eligible: {int(bad_eligible.sum()):,}")
+if bad_eligible.any():
+    df.loc[bad_eligible,["Date","Ticker","Close","Eligible"]].to_csv(OUT/"eligible_bad_prices.csv",index=False)
+    raise RuntimeError("FAIL CLOSED: non-positive Close reached eligible universe.")
+# Invalid non-eligible history must not enter rolling features. Convert it to NaN so
+# pct_change/rolling calculations cannot propagate impossible prices into later rows.
+df.loc[bad_price,"Close"]=np.nan
 
 g=df.groupby("Ticker",sort=False,group_keys=False)
 # Explicit no-fill removes pandas pct_change ambiguity.
