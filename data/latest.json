@@ -1,13 +1,13 @@
 {
-  "updated": "2026-10-23T23:55:56.402826+00:00",
+  "updated": "2026-10-27T00:41:46.306224+00:00",
   "entryDate": "2026-09-21",
   "entryBasis": "Adjusted market open; first trading session after snapshot lock",
   "coverage": 50,
   "expectedCoverage": 50,
-  "portfolioDay": -0.008389405688923648,
-  "portfolioSinceEntry": -0.01896705625129798,
+  "portfolioDay": -0.008355845060670632,
+  "portfolioSinceEntry": -0.018965911928226442,
   "spySinceEntry": -0.008195796798531774,
-  "excessSinceEntry": -0.010771259452766205,
+  "excessSinceEntry": -0.010770115129694668,
   "positions": [
     {
       "t": "BNY",
@@ -144,10 +144,10 @@
     },
     {
       "t": "PFG",
-      "close": 108.56500244140625,
-      "day": -0.014031406415232262,
-      "sinceEntry": -0.0812811701478322,
-      "sinceSignalDiagnostic": -0.006985170687168085
+      "close": 108.56999969482422,
+      "day": -0.013986022223149153,
+      "sinceEntry": -0.08123888146631064,
+      "sinceSignalDiagnostic": -0.006939462156441922
     },
     {
       "t": "GWW",
@@ -270,10 +270,10 @@
     },
     {
       "t": "AAPL",
-      "close": 347.7250061035156,
-      "day": -0.00142150110692163,
-      "sinceEntry": 0.03711825151971215,
-      "sinceSignalDiagnostic": 0.09744358341565906
+      "close": 347.7300109863281,
+      "day": -0.0014071283460378448,
+      "sinceEntry": 0.03713317899176749,
+      "sinceSignalDiagnostic": 0.09745937916354008
     },
     {
       "t": "BNS",
@@ -334,7 +334,7 @@
     {
       "t": "NVT",
       "close": 125.4000015258789,
-      "day": -0.01778018857697894,
+      "day": -0.016161914117295062,
       "sinceEntry": -0.22116635113260097,
       "sinceSignalDiagnostic": -0.168159193858183
     },
